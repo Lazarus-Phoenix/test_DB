@@ -21,6 +21,22 @@ class PostgresChecker:
             print(f"Ошибка при подключении к PostgreSQL: {e}")
             sys.exit(1)
 
+    def reset_table(self):
+        try:
+            cur = self.conn.cursor()
+            cur.execute("DROP TABLE IF EXISTS test_table CASCADE;")
+            cur.execute("""
+                CREATE TABLE test_table (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(50),
+                    age INTEGER
+                );
+            """)
+            self.conn.commit()
+            print("Таблица test_table была удалена и пересоздана.")
+        except psycopg2.Error as e:
+            print(f"Ошибка при очистке таблицы: {e}")
+
     def create_table(self):
         try:
             cur = self.conn.cursor()
@@ -49,9 +65,9 @@ class PostgresChecker:
     def query_data(self):
         try:
             cur = self.conn.cursor()
-            cur.execute("SELECT * FROM test_table;")
+            cur.execute("SELECT * FROM test_table ORDER BY id DESC LIMIT 5;")
             rows = cur.fetchall()
-            print("\nПолученные данные из таблицы:")
+            print("\nПоследние 5 записей из таблицы:")
             for row in rows:
                 print(row)
         except psycopg2.Error as e:
@@ -62,15 +78,14 @@ class PostgresChecker:
             self.conn.close()
             print("Соединение с PostgreSQL закрыто.")
 
-
 def main():
     checker = PostgresChecker()
 
     # Подключение к базе данных
     checker.connect()
 
-    # Создание таблицы
-    checker.create_table()
+    # Очистка и создание таблицы
+    checker.reset_table()
 
     # Вставка данных
     checker.insert_data()
@@ -80,7 +95,6 @@ def main():
 
     # Закрытие соединения
     checker.close_connection()
-
 
 if __name__ == "__main__":
     main()
